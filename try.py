@@ -53,6 +53,8 @@ if __name__ == '__main__':
     nodes = ((node_id, Geohash.encode(float(lat), float(lon), 10)) for (node_id, lat, lon) in nodes)
     nodes = dict(list(nodes))
     nodes = [nodes[node_id] for node_id in node_ids]
+    
+    #nodes = [(i == 0 and node or offset(nodes[i - 1], node)) for (i, node) in enumerate(nodes)]
 
     message = [tags, nodes]
     print message
