@@ -9,6 +9,17 @@ import xml.etree.ElementTree
 
 gpg_command = 'gpg --use-agent'
 
+def offset(base, other):
+    
+    assert len(base) == len(other)
+    
+    while base[0] = other[0]:
+        base, other = base[1:], other[1:]
+
+    return other
+
+print offset('abcdef', 'abcghi')
+
 if __name__ == '__main__':
     
     url = 'file:///Users/migurski/Sites/GOSM/%s-%s.xml' % tuple(sys.argv[1:3])
