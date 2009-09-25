@@ -13,12 +13,10 @@ def offset(base, other):
     
     assert len(base) == len(other)
     
-    while base[0] = other[0]:
+    while len(other) and base[0] == other[0]:
         base, other = base[1:], other[1:]
 
     return other
-
-print offset('abcdef', 'abcghi')
 
 if __name__ == '__main__':
     
