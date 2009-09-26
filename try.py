@@ -27,14 +27,7 @@ if __name__ == '__main__':
     
     print url, key
     
-    handle, filename = tempfile.mkstemp(dir='/tmp', prefix='osm-', suffix='.xml')
-    
-    os.write(handle, urllib.urlopen(url).read())
-    os.close(handle)
-    
-    print filename
-    
-    tree = xml.etree.ElementTree.parse(filename)
+    tree = xml.etree.ElementTree.parse(urllib.urlopen(url))
     
     tags = ((nd.attrib.get('k', None), nd.attrib.get('v', None))
             for nd in tree.getroot().find('way').findall('tag'))
@@ -56,11 +49,18 @@ if __name__ == '__main__':
     
     #nodes = [(i == 0 and node or offset(nodes[i - 1], node)) for (i, node) in enumerate(nodes)]
 
-    message = [tags, nodes]
+    data = [tags, nodes]
+    message = bencode.bencode(data)
+
+    print data
     print message
-    print bencode.bencode(message)
     
-    sys.exit(1)
+    handle, filename = tempfile.mkstemp(dir='/tmp', prefix='osm-', suffix='.ben')
+    
+    os.write(handle, message)
+    os.close(handle)
+    
+    print filename
     
     cmd = (gpg_command + ' --detach --sign --local-user ' + key).split() + [filename]
     print cmd
