@@ -1,12 +1,13 @@
 import os, sys
-import urllib
-import base64
-import bencode
-import Geohash
 import tempfile
 import optparse
 import subprocess
 import xml.etree.ElementTree
+
+from urllib import urlopen
+from Geohash import encode as geohash
+from base64 import b64encode
+from bencode import bencode 
 
 def offset(base, other):
     
@@ -34,7 +35,7 @@ if __name__ == '__main__':
     
     print url, options.key, tag_names
     
-    tree = xml.etree.ElementTree.parse(urllib.urlopen(url))
+    tree = xml.etree.ElementTree.parse(urlopen(url))
     
     tags = [(nd.attrib.get('k', None), nd.attrib.get('v', None))
             for nd in tree.getroot().find('way').findall('tag')]
@@ -47,19 +48,19 @@ if __name__ == '__main__':
     url = 'http://api.openstreetmap.org/api/0.6/nodes?nodes=%s' % ','.join(node_ids)
     url = 'file:///Users/migurski/Sites/GOSM/nodes.xml'
 
-    tree = xml.etree.ElementTree.parse(urllib.urlopen(url))
+    tree = xml.etree.ElementTree.parse(urlopen(url))
     
     nodes = ((nd.attrib.get('id', None), nd.attrib.get('lat', None), nd.attrib.get('lon', None))
              for nd in tree.getroot().findall('node'))
 
-    nodes = [(node_id, Geohash.encode(float(lat), float(lon), 10)) for (node_id, lat, lon) in nodes]
+    nodes = [(node_id, geohash(float(lat), float(lon), 10)) for (node_id, lat, lon) in nodes]
     nodes = dict(nodes)
     nodes = [nodes[node_id] for node_id in node_ids]
     
     #nodes = [(i == 0 and node or offset(nodes[i - 1], node)) for (i, node) in enumerate(nodes)]
 
     data = [tags, nodes]
-    message = bencode.bencode(data)
+    message = bencode(data)
 
     print data
     print message
@@ -75,11 +76,16 @@ if __name__ == '__main__':
     
     signature = open(filename + '.sig', 'r').read()
     
-    print base64.b64encode(signature)
+    print b64encode(signature)
     
     cmd = (options.gpg + ' --verify').split()+ [filename + '.sig']
-    gpg = subprocess.Popen(cmd, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
+    gpg = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     gpg.wait()
+    
+    if gpg.returncode == 0:
+        print 'Signature checks out'
+    else:
+        print 'Signature FAIL'
 
     os.unlink(filename)
     os.unlink(filename + '.sig')
