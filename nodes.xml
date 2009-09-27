@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<osm version="0.6" generator="OpenStreetMap server">
+  <node id="53045510" lat="37.804198" lon="-122.2623911" version="5" changeset="2498408" user="woodpeck_fixbot" uid="147510" visible="true" timestamp="2009-09-16T05:18:35Z"/>
+  <node id="53104346" lat="37.8046689" lon="-122.2635501" version="6" changeset="2498408" user="woodpeck_fixbot" uid="147510" visible="true" timestamp="2009-09-16T05:36:07Z"/>
+  <node id="274365970" lat="37.8043793" lon="-122.2628588" version="1" changeset="328066" user="Michal Migurski" uid="25981" visible="true" timestamp="2008-06-28T22:39:33Z"/>
+  <node id="283267549" lat="37.8052104" lon="-122.2659736" version="2" changeset="1655574" user="StellanL" uid="28775" visible="true" timestamp="2009-06-27T23:29:55Z"/>
+  <node id="283267550" lat="37.8051561" lon="-122.2649265" version="2" changeset="1655574" user="StellanL" uid="28775" visible="true" timestamp="2009-06-27T23:29:55Z"/>
+  <node id="53027383" lat="37.8061811" lon="-122.2685044" version="17" changeset="2498408" user="woodpeck_fixbot" uid="147510" visible="true" timestamp="2009-09-16T05:14:11Z"/>
+  <node id="246806704" lat="37.8056996" lon="-122.2673371" version="10" changeset="1400613" user="Speight" uid="24452" visible="true" timestamp="2009-06-02T06:15:33Z"/>
+  <node id="53104343" lat="37.8037149" lon="-122.2611966" version="7" changeset="2172708" user="woodpeck_fixbot" uid="147510" visible="true" timestamp="2009-08-17T03:14:50Z"/>
+  <node id="53104347" lat="37.8052453" lon="-122.266144" version="12" changeset="2172708" user="woodpeck_fixbot" uid="147510" visible="true" timestamp="2009-08-17T03:14:50Z"/>
+  <node id="53077118" lat="37.8066498" lon="-122.2697104" version="12" changeset="2498408" user="woodpeck_fixbot" uid="147510" visible="true" timestamp="2009-09-16T05:27:59Z">
+    <tag k="highway" v="traffic_signals"/>
+  </node>
+  <node id="53078087" lat="37.8051392" lon="-122.2647593" version="6" changeset="2498408" user="woodpeck_fixbot" uid="147510" visible="true" timestamp="2009-09-16T05:28:17Z"/>
+</osm>

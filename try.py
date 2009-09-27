@@ -29,28 +29,31 @@ if __name__ == '__main__':
     options, args = parser.parse_args()
     
     url = 'http://api.openstreetmap.org/api/0.6/way/%d' % options.way
+    url = 'file:///Users/migurski/Sites/GOSM/way.xml'
     tag_names = args[:]
     
     print url, options.key, tag_names
     
     tree = xml.etree.ElementTree.parse(urllib.urlopen(url))
     
-    tags = ((nd.attrib.get('k', None), nd.attrib.get('v', None))
-            for nd in tree.getroot().find('way').findall('tag'))
+    tags = [(nd.attrib.get('k', None), nd.attrib.get('v', None))
+            for nd in tree.getroot().find('way').findall('tag')]
 
-    tags = ((key, value) for (key, value) in tags if key in tag_names)
-    tags = dict(list(tags))
+    tags = dict(tags)
+    tags = [(key, tags.get(key, '')) for key in tag_names]
+    tags = dict(tags)
 
     node_ids = [nd.attrib.get('ref', '') for nd in tree.getroot().find('way').findall('nd')]
     url = 'http://api.openstreetmap.org/api/0.6/nodes?nodes=%s' % ','.join(node_ids)
+    url = 'file:///Users/migurski/Sites/GOSM/nodes.xml'
 
     tree = xml.etree.ElementTree.parse(urllib.urlopen(url))
     
     nodes = ((nd.attrib.get('id', None), nd.attrib.get('lat', None), nd.attrib.get('lon', None))
              for nd in tree.getroot().findall('node'))
 
-    nodes = ((node_id, Geohash.encode(float(lat), float(lon), 10)) for (node_id, lat, lon) in nodes)
-    nodes = dict(list(nodes))
+    nodes = [(node_id, Geohash.encode(float(lat), float(lon), 10)) for (node_id, lat, lon) in nodes]
+    nodes = dict(nodes)
     nodes = [nodes[node_id] for node_id in node_ids]
     
     #nodes = [(i == 0 and node or offset(nodes[i - 1], node)) for (i, node) in enumerate(nodes)]
@@ -66,14 +69,9 @@ if __name__ == '__main__':
     os.write(handle, message)
     os.close(handle)
     
-    print filename
-    
     cmd = (options.gpg + ' --detach --sign --local-user ' + options.key).split() + [filename]
-    print cmd
     gpg = subprocess.Popen(cmd, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
     gpg.wait()
-    
-    print filename + '.sig'
     
     signature = open(filename + '.sig', 'r').read()
     

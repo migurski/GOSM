@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<osm version="0.6" generator="OpenStreetMap server">
+  <way id="25966407" visible="true" timestamp="2008-08-04T04:58:18Z" version="1" changeset="46848" user="Speight" uid="24452">
+    <nd ref="53077118"/>
+    <nd ref="53027383"/>
+    <nd ref="246806704"/>
+    <nd ref="53104347"/>
+    <nd ref="283267549"/>
+    <nd ref="283267550"/>
+    <nd ref="53078087"/>
+    <nd ref="53104346"/>
+    <nd ref="274365970"/>
+    <nd ref="53045510"/>
+    <nd ref="53104343"/>
+    <tag k="created_by" v="Potlatch 0.9c"/>
+    <tag k="highway" v="residential"/>
+    <tag k="name" v="17th St"/>
+    <tag k="oneway" v="yes"/>
+    <tag k="tiger:cfcc" v="A41"/>
+    <tag k="tiger:county" v="Alameda, CA"/>
+    <tag k="tiger:name_base" v="17th"/>
+    <tag k="tiger:name_type" v="St"/>
+    <tag k="tiger:separated" v="no"/>
+    <tag k="tiger:source" v="tiger_import_dch_v0.6_20070809"/>
+    <tag k="tiger:tlid" v="124997135:124997148:124997151:124997168:124997174:125000905:125000914:125000955:125000907"/>
+    <tag k="tiger:upload_uuid" v="bulk_upload.pl-9d5e179e-e488-4300-b71d-b0a82eacb273"/>
+    <tag k="tiger:zip_right" v="94612"/>
+  </way>
+</osm>
