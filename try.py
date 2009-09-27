@@ -9,31 +9,11 @@ from Geohash import encode as geohash
 from base64 import b64encode
 from bencode import bencode 
 
-def offset(base, other):
-    
-    assert len(base) == len(other)
-    
-    while len(other) and base[0] == other[0]:
-        base, other = base[1:], other[1:]
-
-    return other
-
-parser = optparse.OptionParser()
-parser.set_defaults(gpg='gpg')
-
-parser.add_option('-g', '--gpg', dest='gpg')
-parser.add_option('-w', '--way', dest='way', type='int')
-parser.add_option('-k', '--key', dest='key')
-
-if __name__ == '__main__':
-    
-    options, args = parser.parse_args()
-    
-    url = 'http://api.openstreetmap.org/api/0.6/way/%d' % options.way
+def encode_way(way_id, tag_names):
+    """
+    """
+    url = 'http://api.openstreetmap.org/api/0.6/way/%d' % way_id
     url = 'file:///Users/migurski/Sites/GOSM/way.xml'
-    tag_names = args[:]
-    
-    print url, options.key, tag_names
     
     tree = xml.etree.ElementTree.parse(urlopen(url))
     
@@ -62,7 +42,32 @@ if __name__ == '__main__':
     data = [tags, nodes]
     message = bencode(data)
 
-    print data
+    print >> sys.stderr, data
+
+    return message
+
+def offset(base, other):
+    
+    assert len(base) == len(other)
+    
+    while len(other) and base[0] == other[0]:
+        base, other = base[1:], other[1:]
+
+    return other
+
+parser = optparse.OptionParser()
+parser.set_defaults(gpg='gpg')
+
+parser.add_option('-g', '--gpg', dest='gpg')
+parser.add_option('-w', '--way', dest='way', type='int')
+parser.add_option('-k', '--key', dest='key')
+
+if __name__ == '__main__':
+    
+    options, args = parser.parse_args()
+    
+    message = encode_way(options.way, args[:])
+    
     print message
     
     handle, filename = tempfile.mkstemp(dir='/tmp', prefix='osm-', suffix='.ben')
