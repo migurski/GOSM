@@ -4,10 +4,9 @@ import base64
 import bencode
 import Geohash
 import tempfile
+import optparse
 import subprocess
 import xml.etree.ElementTree
-
-gpg_command = 'gpg --use-agent'
 
 def offset(base, other):
     
@@ -18,14 +17,21 @@ def offset(base, other):
 
     return other
 
+parser = optparse.OptionParser()
+parser.set_defaults(gpg='gpg')
+
+parser.add_option('-g', '--gpg', dest='gpg')
+parser.add_option('-w', '--way', dest='way', type='int')
+parser.add_option('-k', '--key', dest='key')
+
 if __name__ == '__main__':
     
-    url = 'file:///Users/migurski/Sites/GOSM/%s-%s.xml' % tuple(sys.argv[1:3])
-    url = 'http://api.openstreetmap.org/api/0.6/%s/%s' % tuple(sys.argv[1:3])
-    key = sys.argv[3]
-    tag_names = sys.argv[4:]
+    options, args = parser.parse_args()
     
-    print url, key
+    url = 'http://api.openstreetmap.org/api/0.6/way/%d' % options.way
+    tag_names = args[:]
+    
+    print url, options.key, tag_names
     
     tree = xml.etree.ElementTree.parse(urllib.urlopen(url))
     
@@ -62,7 +68,7 @@ if __name__ == '__main__':
     
     print filename
     
-    cmd = (gpg_command + ' --detach --sign --local-user ' + key).split() + [filename]
+    cmd = (options.gpg + ' --detach --sign --local-user ' + options.key).split() + [filename]
     print cmd
     gpg = subprocess.Popen(cmd, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
     gpg.wait()
@@ -73,7 +79,7 @@ if __name__ == '__main__':
     
     print base64.b64encode(signature)
     
-    cmd = (gpg_command + ' --verify').split()+ [filename + '.sig']
+    cmd = (options.gpg + ' --verify').split()+ [filename + '.sig']
     gpg = subprocess.Popen(cmd, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
     gpg.wait()
 
