@@ -57,6 +57,7 @@ def encode_way(way_id, tag_names):
     nodes = dict(nodes)
     nodes = [nodes[node_id] for node_id in node_ids]
     
+    ## keep just the offsets which doesn't make much sense in this context
     #nodes = [(i == 0 and node or offset(nodes[i - 1], node)) for (i, node) in enumerate(nodes)]
 
     data = [tags, nodes]
