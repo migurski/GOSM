@@ -8,7 +8,24 @@ import xml.etree.ElementTree
 from urllib import urlopen
 from Geohash import encode as geohash
 from base64 import b64encode
-from bencode import bencode 
+from bencode import bencode
+
+def main(gpg_command, gpg_key, way_id, tag_names):
+    """
+    """
+    message = encode_way(way_id, tag_names)
+    signature = sign_message(gpg_command, gpg_key, message)
+    verified = verify_signature(gpg_command, message, signature)
+
+    if not verified:
+        print >> sys.stderr, 'Signature FAIL'
+        return 1
+
+    print '%sT%s' % (str(datetime.datetime.utcnow())[:10], str(datetime.datetime.utcnow())[11:19]),
+    print gpg_key, 'way', way_id,
+    print b64encode(signature), ' '.join(tag_names)
+    
+    return 0
 
 def encode_way(way_id, tag_names):
     """ Given an OSM id for a way and a list of tag names, returns a signable encoding.
@@ -110,16 +127,5 @@ parser.add_option('-w', '--way', dest='way', type='int')
 parser.add_option('-k', '--key', dest='key')
 
 if __name__ == '__main__':
-    
     options, args = parser.parse_args()
-    
-    message = encode_way(options.way, args[:])
-    signature = sign_message(options.gpg, options.key, message)
-    verified = verify_signature(options.gpg, message, signature)
-
-    if not verified:
-        raise Exception('Signature FAIL')
-
-    print '%sT%s' % (str(datetime.datetime.utcnow())[:10], str(datetime.datetime.utcnow())[11:19]),
-    print options.key, 'way', options.way,
-    print b64encode(signature), ' '.join(args[:])
+    sys.exit(main(options.gpg, options.key, options.way, args[:]))
