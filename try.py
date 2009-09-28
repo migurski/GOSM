@@ -10,7 +10,7 @@ from base64 import b64encode
 from bencode import bencode 
 
 def encode_way(way_id, tag_names):
-    """
+    """ Given an OSM id for a way and a list of tag names, returns a signable encoding.
     """
     url = 'http://api.openstreetmap.org/api/0.6/way/%d' % way_id
     url = 'file:///Users/migurski/Sites/GOSM/way.xml'
@@ -46,6 +46,49 @@ def encode_way(way_id, tag_names):
 
     return message
 
+def sign_message(gpg_command, gpg_key, message):
+    """ Given a GnuPG command, key id and signable message, return a raw binary signature.
+    """
+    print >> sys.stderr, message
+    
+    handle, filename = tempfile.mkstemp(prefix='osm-', suffix='.ben')
+    
+    os.write(handle, message)
+    os.close(handle)
+    
+    cmd = (gpg_command + ' --detach --sign --local-user ' + gpg_key).split() + [filename]
+    gpg = subprocess.Popen(cmd, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
+    gpg.wait()
+    
+    assert gpg.returncode == 0
+    
+    signature = open(filename + '.sig', 'r').read()
+    
+    print >> sys.stderr, b64encode(signature)
+    
+    os.unlink(filename)
+    os.unlink(filename + '.sig')
+    
+    return signature
+
+def verify_signature(gpg_command, message, signature):
+    """ Given a GnuPG command, message and signature, return boolean verification of signature.
+    """
+    handle, filename_enc = tempfile.mkstemp(prefix='osm-', suffix='.ben')
+    os.write(handle, message)
+    
+    handle, filename_sig = tempfile.mkstemp(prefix='osm-', suffix='.sig')
+    os.write(handle, signature)
+    
+    cmd = (gpg_command + ' --verify').split()+ [filename_sig, filename_enc]
+    gpg = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    gpg.wait()
+
+    os.unlink(filename_sig)
+    os.unlink(filename_enc)
+    
+    return (gpg.returncode == 0)
+
 def offset(base, other):
     
     assert len(base) == len(other)
@@ -67,30 +110,10 @@ if __name__ == '__main__':
     options, args = parser.parse_args()
     
     message = encode_way(options.way, args[:])
-    
-    print message
-    
-    handle, filename = tempfile.mkstemp(dir='/tmp', prefix='osm-', suffix='.ben')
-    
-    os.write(handle, message)
-    os.close(handle)
-    
-    cmd = (options.gpg + ' --detach --sign --local-user ' + options.key).split() + [filename]
-    gpg = subprocess.Popen(cmd, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
-    gpg.wait()
-    
-    signature = open(filename + '.sig', 'r').read()
-    
-    print b64encode(signature)
-    
-    cmd = (options.gpg + ' --verify').split()+ [filename + '.sig']
-    gpg = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    gpg.wait()
-    
-    if gpg.returncode == 0:
+    signature = sign_message(options.gpg, options.key, message)
+    verified = verify_signature(options.gpg, message, signature)
+
+    if verified:
         print 'Signature checks out'
     else:
         print 'Signature FAIL'
-
-    os.unlink(filename)
-    os.unlink(filename + '.sig')
