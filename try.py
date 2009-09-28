@@ -1,6 +1,7 @@
 import os, sys
 import tempfile
 import optparse
+import datetime
 import subprocess
 import xml.etree.ElementTree
 
@@ -12,6 +13,8 @@ from bencode import bencode
 def encode_way(way_id, tag_names):
     """ Given an OSM id for a way and a list of tag names, returns a signable encoding.
     """
+    assert len([tag for tag in tag_names if ' ' in tag]) == 0, 'Expecting tag names with no white space'
+    
     url = 'http://api.openstreetmap.org/api/0.6/way/%d' % way_id
     url = 'file:///Users/migurski/Sites/GOSM/way.xml'
     
@@ -24,7 +27,7 @@ def encode_way(way_id, tag_names):
     tags = [(key, tags.get(key, '')) for key in tag_names]
     tags = dict(tags)
 
-    node_ids = [nd.attrib.get('ref', '') for nd in tree.getroot().find('way').findall('nd')]
+    node_ids = [nd.attrib.get('ref', False) for nd in tree.getroot().find('way').findall('nd')]
     url = 'http://api.openstreetmap.org/api/0.6/nodes?nodes=%s' % ','.join(node_ids)
     url = 'file:///Users/migurski/Sites/GOSM/nodes.xml'
 
@@ -56,11 +59,12 @@ def sign_message(gpg_command, gpg_key, message):
     os.write(handle, message)
     os.close(handle)
     
-    cmd = (gpg_command + ' --detach --sign --local-user ' + gpg_key).split() + [filename]
+    cmd = (gpg_command + ' --detach --sign').split() + (gpg_key and ['--local-user', gpg_key] or []) + [filename]
     gpg = subprocess.Popen(cmd, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
     gpg.wait()
     
-    assert gpg.returncode == 0
+    if gpg.returncode != 0:
+        raise Exception('Expecting a successful signing')
     
     signature = open(filename + '.sig', 'r').read()
     
@@ -113,7 +117,9 @@ if __name__ == '__main__':
     signature = sign_message(options.gpg, options.key, message)
     verified = verify_signature(options.gpg, message, signature)
 
-    if verified:
-        print 'Signature checks out'
-    else:
-        print 'Signature FAIL'
+    if not verified:
+        raise Exception('Signature FAIL')
+
+    print '%sT%s' % (str(datetime.datetime.utcnow())[:10], str(datetime.datetime.utcnow())[11:19]),
+    print options.key, 'way', options.way,
+    print b64encode(signature), ' '.join(args[:])
