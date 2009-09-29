@@ -1,4 +1,5 @@
 import os, sys
+import csv
 import httplib
 import tempfile
 import optparse
@@ -12,22 +13,28 @@ from Geohash import encode as geohash
 from base64 import b64encode
 from bencode import bencode
 
-def main(gpg_command, gpg_key, way_id, tag_names):
+def main(osm_user, osm_pass, gpg_command, gpg_key, way_ids, tag_names):
     """
     """
-    message = encode_way(way_id, tag_names)
-    signature = sign_message(gpg_command, gpg_key, message)
-    verified = verify_signature(gpg_command, message, signature)
-
-    if not verified:
-        print >> sys.stderr, 'Signature FAIL'
-        return 1
-
-    print '%sT%s' % (str(datetime.datetime.utcnow())[:10], str(datetime.datetime.utcnow())[11:19]),
-    print gpg_key, 'way', way_id,
-    print b64encode(signature), ' '.join(tag_names)
+    out = csv.writer(sys.stdout, 'excel-tab')
+    changeset = open_changeset(osm_user, osm_pass)
     
-    sign_way('u', 'p', gpg_key, way_id, tag_names, signature)
+    for way_id in way_ids:
+        message = encode_way(way_id, tag_names)
+        signature = sign_message(gpg_command, gpg_key, message)
+        verified = verify_signature(gpg_command, message, signature)
+
+        if not verified:
+            print >> sys.stderr, 'Signature FAIL'
+    
+        row = ['%sT%s' % (str(datetime.datetime.utcnow())[:10], str(datetime.datetime.utcnow())[11:19])]
+        row += [gpg_key, 'way', way_id]
+        row += [b64encode(signature), ' '.join(tag_names)]
+        out.writerow(row)
+    
+        sign_way(osm_user, osm_pass, changeset, gpg_key, way_id, tag_names, signature)
+
+    close_changeset(osm_user, osm_pass, changeset)
     
     return 0
 
@@ -36,8 +43,8 @@ def encode_way(way_id, tag_names):
     """
     assert len([tag for tag in tag_names if ' ' in tag]) == 0, 'Expecting tag names with no white space'
     
-    url = 'http://api.openstreetmap.org/api/0.6/way/%d' % way_id
     url = 'file:///Users/migurski/Sites/GOSM/way.xml'
+    url = 'http://api.openstreetmap.org/api/0.6/way/%d' % way_id
     
     tree = xml.etree.ElementTree.parse(urlopen(url))
     
@@ -49,8 +56,8 @@ def encode_way(way_id, tag_names):
     tags = dict(tags)
 
     node_ids = [nd.attrib.get('ref', False) for nd in tree.getroot().find('way').findall('nd')]
-    url = 'http://api.openstreetmap.org/api/0.6/nodes?nodes=%s' % ','.join(node_ids)
     url = 'file:///Users/migurski/Sites/GOSM/nodes.xml'
+    url = 'http://api.openstreetmap.org/api/0.6/nodes?nodes=%s' % ','.join(node_ids)
 
     tree = xml.etree.ElementTree.parse(urlopen(url))
     
@@ -155,11 +162,9 @@ def close_changeset(osm_user, osm_pass, changeset):
     if res.status != 200:
         raise Exception('%d: %s' % (res.status, res.read()))
 
-def sign_way(osm_user, osm_pass, gpg_key, way_id, tag_names, signature):
+def sign_way(osm_user, osm_pass, changeset, gpg_key, way_id, tag_names, signature):
     """
     """
-    changeset = open_changeset(osm_user, osm_pass)
-    
     url = 'http://api.openstreetmap.org/api/0.6/way/%d' % way_id
     doc = xml.dom.minidom.parse(urlopen(url))
     
@@ -188,8 +193,6 @@ def sign_way(osm_user, osm_pass, gpg_key, way_id, tag_names, signature):
     if res.status != 200:
         raise Exception('%d: %s' % (res.status, res.read()))
 
-    close_changeset(osm_user, osm_pass, changeset)
-
     return True
 
 def offset(base, other):
@@ -201,13 +204,15 @@ def offset(base, other):
 
     return other
 
-parser = optparse.OptionParser()
+parser = optparse.OptionParser(usage='%s [options] [list of way IDs]' % __file__)
 parser.set_defaults(gpg='gpg')
 
-parser.add_option('-g', '--gpg', dest='gpg')
-parser.add_option('-w', '--way', dest='way', type='int')
-parser.add_option('-k', '--key', dest='key')
+parser.add_option('-g', '--gpg', dest='gpg', help='GPG command, may include additional options e.g.: "gpg --use-agent"')
+parser.add_option('-k', '--key', dest='key', help='GPG key id')
+parser.add_option('-t', '--tag-names', dest='tag_names', help='Comma-delimited list of tag names')
+parser.add_option('-u', '--username', dest='username', help='OpenStreetMap account username')
+parser.add_option('-p', '--password', dest='password', help='OpenStreetMap account password')
 
 if __name__ == '__main__':
     options, args = parser.parse_args()
-    sys.exit(main(options.gpg, options.key, options.way, args[:]))
+    sys.exit(main(options.username, options.password, options.gpg, options.key, map(int, args[:]), options.tag_names.split(',')))
