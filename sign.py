@@ -92,8 +92,6 @@ def encode_way(way_id, tag_names):
     data = [tags, nodes]
     message = bencode(data)
 
-    print >> sys.stderr, data
-
     return message
 
 def sign_message(gpg_command, gpg_key, message):
