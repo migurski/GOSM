@@ -27,7 +27,7 @@ def main(osm_user, osm_pass, gpg_command, gpg_key, way_ids, tag_names):
         if not verified:
             print >> sys.stderr, 'Signature FAIL'
     
-        row = ['%sT%s' % (str(datetime.datetime.utcnow())[:10], str(datetime.datetime.utcnow())[11:19])]
+        row = ['%sT%sZ' % (str(datetime.datetime.utcnow())[:10], str(datetime.datetime.utcnow())[11:19])]
         row += [gpg_key, 'way', way_id]
         row += [b64encode(signature), ' '.join(tag_names)]
         out.writerow(row)
@@ -183,7 +183,7 @@ def sign_way(osm_user, osm_pass, changeset, gpg_key, way_id, tag_names, signatur
     now = str(datetime.datetime.utcnow())
     tag = xml.dom.minidom.Element('tag')
     tag.setAttribute('k', tag_name)
-    tag.setAttribute('v', '%s %s %sT%s' % (' '.join(tag_names), b64encode(signature), now[:10], now[11:19]))
+    tag.setAttribute('v', '%s %s %sT%sZ' % (' '.join(tag_names), b64encode(signature), now[:10], now[11:19]))
     way.appendChild(tag)
 
     conn = httplib.HTTPConnection('api.openstreetmap.org', 80)
