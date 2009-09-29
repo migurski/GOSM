@@ -1,9 +1,11 @@
 import os, sys
+import httplib
 import tempfile
 import optparse
 import datetime
 import subprocess
 import xml.etree.ElementTree
+import xml.dom.minidom
 
 from urllib import urlopen
 from Geohash import encode as geohash
@@ -24,6 +26,8 @@ def main(gpg_command, gpg_key, way_id, tag_names):
     print '%sT%s' % (str(datetime.datetime.utcnow())[:10], str(datetime.datetime.utcnow())[11:19]),
     print gpg_key, 'way', way_id,
     print b64encode(signature), ' '.join(tag_names)
+    
+    sign_way('u', 'p', gpg_key, way_id, tag_names, signature)
     
     return 0
 
@@ -110,6 +114,83 @@ def verify_signature(gpg_command, message, signature):
     os.unlink(filename_enc)
     
     return (gpg.returncode == 0)
+
+def open_changeset(osm_user, osm_pass):
+    """
+    """
+    doc = xml.dom.minidom.Document()
+
+    changeset = xml.dom.minidom.Element('changeset')
+
+    tag = xml.dom.minidom.Element('tag')
+    tag.setAttribute('k', 'created_by')
+    tag.setAttribute('v', 'GOSM')
+    changeset.appendChild(tag)
+
+    tag = xml.dom.minidom.Element('tag')
+    tag.setAttribute('k', 'comment')
+    tag.setAttribute('v', 'Putting a signature on a way')
+    changeset.appendChild(tag)
+    
+    osm = xml.dom.minidom.Element('osm')
+    osm.appendChild(changeset)
+    doc.appendChild(osm)
+    
+    conn = httplib.HTTPConnection('api.openstreetmap.org', 80)
+    conn.request('PUT', '/api/0.6/changeset/create', doc.toxml(), {'Authorization': 'Basic %s' % b64encode('%s:%s' % (osm_user, osm_pass))})
+    res = conn.getresponse()
+    
+    if res.status != 200:
+        raise Exception('%d: %s' % (res.status, res.read()))
+    
+    return res.read().strip()
+
+def close_changeset(osm_user, osm_pass, changeset):
+    """
+    """
+    conn = httplib.HTTPConnection('api.openstreetmap.org', 80)
+    conn.request('PUT', '/api/0.6/changeset/%s/close' % changeset, '', {'Authorization': 'Basic %s' % b64encode('%s:%s' % (osm_user, osm_pass))})
+    res = conn.getresponse()
+    
+    if res.status != 200:
+        raise Exception('%d: %s' % (res.status, res.read()))
+
+def sign_way(osm_user, osm_pass, gpg_key, way_id, tag_names, signature):
+    """
+    """
+    changeset = open_changeset(osm_user, osm_pass)
+    
+    url = 'http://api.openstreetmap.org/api/0.6/way/%d' % way_id
+    doc = xml.dom.minidom.parse(urlopen(url))
+    
+    assert len(doc.getElementsByTagName('way')) == 1
+    
+    way = doc.getElementsByTagName('way')[0]
+    way.setAttribute('changeset', changeset)
+    
+    tag_name = 'gosm:sig:%s' % gpg_key
+    
+    # remove existing signature
+    for tag in way.getElementsByTagName('tag'):
+        if tag.getAttribute('k') == tag_name:
+            tag.parentNode.removeChild(tag)
+
+    now = str(datetime.datetime.utcnow())
+    tag = xml.dom.minidom.Element('tag')
+    tag.setAttribute('k', tag_name)
+    tag.setAttribute('v', '%s %s %sT%s' % (' '.join(tag_names), b64encode(signature), now[:10], now[11:19]))
+    way.appendChild(tag)
+
+    conn = httplib.HTTPConnection('api.openstreetmap.org', 80)
+    conn.request('PUT', '/api/0.6/way/%d' % way_id, doc.toxml(), {'Authorization': 'Basic %s' % b64encode('%s:%s' % (osm_user, osm_pass))})
+    res = conn.getresponse()
+    
+    if res.status != 200:
+        raise Exception('%d: %s' % (res.status, res.read()))
+
+    close_changeset(osm_user, osm_pass, changeset)
+
+    return True
 
 def offset(base, other):
     
